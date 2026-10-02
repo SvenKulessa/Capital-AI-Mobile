@@ -1,24 +1,32 @@
-import type { Instrument } from "./types";
+export type AssetClass = "krypto" | "aktien" | "index" | "rohstoff" | "fx" | "anleihe";
+
+export type Instrument = {
+  ticker: string;
+  name: string;
+  klass: AssetClass;
+  group: string;
+  pair: string | null;
+  yahoo: string | null;
+  currency: "USD" | "EUR";
+};
 
 export const INSTRUMENTS: Instrument[] = [
-  { ticker: "BTC", name: "Bitcoin", klass: "krypto", group: "Layer 1", pair: "BTCUSDT", yahoo: null, currency: "USD", base: 64200, vol: 0.028, baseVolume: 18000 },
-  { ticker: "ETH", name: "Ether", klass: "krypto", group: "Layer 1", pair: "ETHUSDT", yahoo: null, currency: "USD", base: 3180, vol: 0.032, baseVolume: 160000 },
-  { ticker: "SOL", name: "Solana", klass: "krypto", group: "Layer 1", pair: "SOLUSDT", yahoo: null, currency: "USD", base: 148, vol: 0.045, baseVolume: 2400000 },
-  { ticker: "AVAX", name: "Avalanche", klass: "krypto", group: "Layer 1", pair: "AVAXUSDT", yahoo: null, currency: "USD", base: 27.5, vol: 0.042, baseVolume: 820000 },
-  { ticker: "UNI", name: "Uniswap", klass: "krypto", group: "DeFi", pair: "UNIUSDT", yahoo: null, currency: "USD", base: 8.2, vol: 0.04, baseVolume: 1100000 },
-  { ticker: "AAVE", name: "Aave", klass: "krypto", group: "DeFi", pair: "AAVEUSDT", yahoo: null, currency: "USD", base: 164, vol: 0.042, baseVolume: 86000 },
-  { ticker: "MKR", name: "Maker", klass: "krypto", group: "DeFi", pair: "MKRUSDT", yahoo: null, currency: "USD", base: 1540, vol: 0.038, baseVolume: 3800 },
-  { ticker: "LDO", name: "Lido", klass: "krypto", group: "DeFi", pair: "LDOUSDT", yahoo: null, currency: "USD", base: 1.12, vol: 0.05, baseVolume: 7200000 },
-  { ticker: "SAP", name: "SAP", klass: "aktien", group: "Europa", pair: null, yahoo: "SAP.DE", currency: "EUR", base: 228, vol: 0.012, baseVolume: 1400000 },
-  { ticker: "ASML", name: "ASML", klass: "aktien", group: "Europa", pair: null, yahoo: "ASML.AS", currency: "EUR", base: 755, vol: 0.018, baseVolume: 480000 },
-  { ticker: "NVDA", name: "NVIDIA", klass: "aktien", group: "USA", pair: null, yahoo: "NVDA", currency: "USD", base: 131, vol: 0.024, baseVolume: 2.1e8 },
+  { ticker: "BTC", name: "Bitcoin", klass: "krypto", group: "Layer 1", pair: "BTCUSDT", yahoo: null, currency: "USD" },
+  { ticker: "ETH", name: "Ether", klass: "krypto", group: "Layer 1", pair: "ETHUSDT", yahoo: null, currency: "USD" },
+  { ticker: "SOL", name: "Solana", klass: "krypto", group: "Layer 1", pair: "SOLUSDT", yahoo: null, currency: "USD" },
+  { ticker: "AVAX", name: "Avalanche", klass: "krypto", group: "Layer 1", pair: "AVAXUSDT", yahoo: null, currency: "USD" },
+  { ticker: "UNI", name: "Uniswap", klass: "krypto", group: "DeFi", pair: "UNIUSDT", yahoo: null, currency: "USD" },
+  { ticker: "AAVE", name: "Aave", klass: "krypto", group: "DeFi", pair: "AAVEUSDT", yahoo: null, currency: "USD" },
+  { ticker: "MKR", name: "Maker", klass: "krypto", group: "DeFi", pair: "MKRUSDT", yahoo: null, currency: "USD" },
+  { ticker: "LDO", name: "Lido", klass: "krypto", group: "DeFi", pair: "LDOUSDT", yahoo: null, currency: "USD" },
+  { ticker: "SAP", name: "SAP", klass: "aktien", group: "Europa", pair: null, yahoo: "SAP.DE", currency: "EUR" },
+  { ticker: "ASML", name: "ASML", klass: "aktien", group: "Europa", pair: null, yahoo: "ASML.AS", currency: "EUR" },
+  { ticker: "NVDA", name: "NVIDIA", klass: "aktien", group: "USA", pair: null, yahoo: "NVDA", currency: "USD" },
+  { ticker: "DAX", name: "DAX", klass: "index", group: "Europa", pair: null, yahoo: "^GDAXI", currency: "EUR" },
+  { ticker: "SPX", name: "S&P 500", klass: "index", group: "USA", pair: null, yahoo: "^GSPC", currency: "USD" },
+  { ticker: "NDX", name: "Nasdaq 100", klass: "index", group: "USA", pair: null, yahoo: "^NDX", currency: "USD" },
+  { ticker: "GOLD", name: "Gold", klass: "rohstoff", group: "Metall", pair: null, yahoo: "GC=F", currency: "USD" },
+  { ticker: "WTI", name: "WTI-Rohöl", klass: "rohstoff", group: "Energie", pair: null, yahoo: "CL=F", currency: "USD" },
+  { ticker: "EURUSD", name: "Euro / US-Dollar", klass: "fx", group: "Major", pair: null, yahoo: "EURUSD=X", currency: "USD" },
+  { ticker: "US10Y", name: "US-Treasury 10J", klass: "anleihe", group: "Rendite", pair: null, yahoo: "^TNX", currency: "USD" },
 ];
-
-export const DEFI = ["UNI", "AAVE", "MKR", "LDO"] as const;
-
-export function instrument(ticker: string) {
-  return INSTRUMENTS.find((item) => item.ticker === ticker) ?? null;
-}
-
-export const DISCLAIMER =
-  "Keine Anlageberatung und kein Angebot. Krypto-Kerzen kommen von der öffentlichen Binance-API, Aktien von der öffentlichen Yahoo-Chart-API. Sentiment ist der unveränderte Fear-&-Greed-Index (alternative.me), nur für Krypto. Scores sind die offene Cluster-Mehrheit aus 50 Flags. Fehlt eine Quelle, bleibt das Feld leer.";
