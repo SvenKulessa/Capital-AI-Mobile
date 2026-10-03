@@ -6,8 +6,8 @@ Eigenständige private Android-App für CAPITAL-AI. Die Mobile-Oberfläche und d
 
 - Android WebView lädt ausschließlich das lokale Bundle unter `https://app.capital-ai.local/`.
 - Authentifizierung startet über den externen Browser mit dem bestehenden CAPITAL-AI Mobile-OIDC/PKCE-Transfer; die Webanwendung wird weder geladen noch als Scoring-Backend verwendet.
-- Marktdaten werden über eine native HTTPS-Bridge von freigegebenen Hosts geladen.
-- Der produktive Mobile-Score wird lokal aus dem aus Finance migrierten `crypto-technical-provenance/0.7.0`-Kern berechnet.
+- Marktdatenquellen benötigen nachgewiesene OSS-Software- und Open-Data-Rechte. Aktuell ist keine reale Ersatzquelle freigegeben; die neue Adapter-Grenze blockiert ohne diese Evidenz.
+- Der Mobile-Score wird lokal aus dem aus Finance migrierten `crypto-technical-provenance/0.7.0`-Kern berechnet.
 - Sentiment bleibt Presentation/Evidence und verändert den Score nicht.
 - NATS JetStream und Valkey/Redis bleiben serverseitig. Broker-Secrets werden niemals in APK oder Web-Bundle übernommen.
 
@@ -24,3 +24,7 @@ gradle -p android :app:assembleDebug :app:assembleRelease
 ```
 
 Die Release-APK wird außerhalb von Git mit dem bestehenden Owner-Key signiert. Keine Keystores oder Passwörter gehören in dieses Repository.
+
+## Release und OSS-Provider
+
+Siehe `docs/RELEASE_SIGNING.md` und `docs/OSS_PROVIDER_DECISION.md`. Die APK-Freigabe bleibt bis zum realen Daten-, Top-400- und Signing-Nachweis blockiert.

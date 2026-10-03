@@ -1,7 +1,8 @@
 package de.svenkulessa.capitalai.mobile;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
+import androidx.activity.ComponentActivity;
+import androidx.activity.OnBackPressedCallback;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -26,9 +27,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
-public final class MainActivity extends Activity {
+public final class MainActivity extends ComponentActivity {
   private static final String LOCAL_HOST="app.capital-ai.local";
   private static final String LOCAL_URL="https://"+LOCAL_HOST+"/index.html";
   private static final String APP_ORIGIN="https://capital-ai.online";
@@ -51,10 +53,7 @@ public final class MainActivity extends Activity {
     if(u==null||!"https".equals(u.getScheme()))return false;
     String h=u.getHost(),p=u.getPath()==null?"":u.getPath();
     if("capital-ai.online".equals(h))return "GET".equals(method)&&p.equals("/api/auth/session");
-    if(!"GET".equals(method))return false;
-    return ("api.binance.com".equals(h)&&p.equals("/api/v3/klines"))
-      ||("api.coinpaprika.com".equals(h)&&(p.equals("/v1/tickers")||p.matches("^/v1/tickers/[a-z0-9-]+/historical$")))
-      ||("api.alternative.me".equals(h)&&p.startsWith("/fng"));
+    return false; // External market providers require verified OSS/data admission.
   }
 
   private byte[] readBounded(InputStream in,int max)throws Exception{
@@ -74,10 +73,10 @@ public final class MainActivity extends Activity {
       new Thread(()->{
         int status=599;String response="request_failed";
         try{
-          String m=String.valueOf(method).toUpperCase();Uri uri=Uri.parse(rawUrl);
+          String m=String.valueOf(method).toUpperCase(Locale.ROOT);Uri uri=Uri.parse(rawUrl);
           if(!allowed(uri,m))throw new SecurityException("blocked_url");
           HttpURLConnection c=(HttpURLConnection)new URL(rawUrl).openConnection();c.setInstanceFollowRedirects(false);c.setConnectTimeout(7000);c.setReadTimeout(9000);c.setRequestMethod(m);c.setRequestProperty("Accept","application/json");c.setRequestProperty("User-Agent","Capital-AI-Mobile/0.2");
-          String cookie=CookieManager.getInstance().getCookie(rawUrl);if(cookie!=null&&!cookie.isBlank())c.setRequestProperty("Cookie",cookie);
+          String cookie=CookieManager.getInstance().getCookie(rawUrl);if(cookie!=null&&!cookie.trim().isEmpty())c.setRequestProperty("Cookie",cookie);
           if("POST".equals(m)){byte[] bytes=(body==null?"":body).getBytes(StandardCharsets.UTF_8);if(bytes.length>65536)throw new SecurityException("body_too_large");c.setDoOutput(true);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(bytes);}
           status=c.getResponseCode();setCookies(c,uri.getScheme()+"://"+uri.getHost());InputStream in=status>=400?c.getErrorStream():c.getInputStream();response=new String(readBounded(in,10*1024*1024),StandardCharsets.UTF_8);c.disconnect();
         }catch(Exception e){response=e.getClass().getSimpleName();}
@@ -89,7 +88,7 @@ public final class MainActivity extends Activity {
   private WebResourceResponse local(WebResourceRequest request){
     Uri u=request.getUrl();if(!LOCAL_HOST.equals(u.getHost()))return null;String path=u.getPath();if(path==null||"/".equals(path))path="/index.html";if(path.contains(".."))return new WebResourceResponse("text/plain","utf-8",null);
     String mime=path.endsWith(".js")?"text/javascript":path.endsWith(".css")?"text/css":"text/html";
-    try{return new WebResourceResponse(mime,"utf-8",getAssets().open("www"+path));}catch(Exception e){return new WebResourceResponse("text/plain","utf-8",null);}
+    try{return new WebResourceResponse(mime,"utf-8",getAssets().open(path.substring(1)));}catch(Exception e){return new WebResourceResponse("text/plain","utf-8",null);}
   }
 
   @SuppressLint({"SetJavaScriptEnabled","AddJavascriptInterface"})
@@ -103,6 +102,11 @@ public final class MainActivity extends Activity {
       @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return !LOCAL_HOST.equals(r.getUrl().getHost());}
       @Override public void onReceivedSslError(WebView v,SslErrorHandler h,SslError e){h.cancel();}
     });
+    getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){
+      @Override public void handleOnBackPressed(){
+        if(webView!=null&&webView.canGoBack())webView.goBack();else finish();
+      }
+    });
     if(state==null)webView.loadUrl(LOCAL_URL);handleIntent(getIntent());
   }
 
@@ -114,13 +118,12 @@ public final class MainActivity extends Activity {
     new Thread(()->{
       try{
         URL url=new URL(APP_ORIGIN+"/api/auth/mobile-exchange");HttpURLConnection c=(HttpURLConnection)url.openConnection();c.setInstanceFollowRedirects(false);c.setConnectTimeout(7000);c.setReadTimeout(9000);c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
-        String body="code="+URLEncoder.encode(code,StandardCharsets.UTF_8)+"&verifier="+URLEncoder.encode(v,StandardCharsets.UTF_8);c.getOutputStream().write(body.getBytes(StandardCharsets.UTF_8));
+        String body="code="+URLEncoder.encode(code,"UTF-8")+"&verifier="+URLEncoder.encode(v,"UTF-8");c.getOutputStream().write(body.getBytes(StandardCharsets.UTF_8));
         int status=c.getResponseCode();setCookies(c,APP_ORIGIN);c.disconnect();webView.post(()->webView.loadUrl(LOCAL_URL+(status==303?"?auth=ok":"?auth=failed")));
       }catch(Exception e){webView.post(()->webView.loadUrl(LOCAL_URL+"?auth=failed"));}
     }).start();
   }
 
   @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);handleIntent(intent);}
-  @Override public void onBackPressed(){if(webView!=null&&webView.canGoBack())webView.goBack();else super.onBackPressed();}
   @Override protected void onDestroy(){if(webView!=null){webView.removeJavascriptInterface("CapitalAI");webView.stopLoading();webView.destroy();webView=null;}super.onDestroy();}
 }

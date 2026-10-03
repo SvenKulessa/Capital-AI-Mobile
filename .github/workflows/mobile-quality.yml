@@ -3,7 +3,7 @@ name: Mobile Quality
 on:
   push:
     branches:
-      - capital-ai-mobile/scorer-migration-20261003
+      - main
   pull_request:
   workflow_dispatch:
 
@@ -25,41 +25,10 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v4.4.0
         with:
           node-version: '24.18.0'
-      - name: Mobile Scoring Unit Tests
-        run: node --test tests/scoring.test.mjs
-      - name: Browser-Emulation Login Daten Scoring
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 -m http.server 4173 --directory web >/tmp/mobile-http.log 2>&1 &
-          server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
-          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 0.2; done
-          chrome="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
-          test -n "$chrome"
-          "$chrome" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=8000 --dump-dom 'http://127.0.0.1:4173/?emulate=1' > browser-emulation.html
-          grep -Fq 'data-login="PASS"' browser-emulation.html
-          grep -Fq 'data-data="PASS"' browser-emulation.html
-          grep -Fq 'data-score="PASS"' browser-emulation.html
-          grep -Fq 'data-quality="PASS"' browser-emulation.html
-      - name: Live Auth Daten und Scorer Contracts
-        run: |
-          node --input-type=module <<'NODE'
-          const j=async(url,opt={})=>{const r=await fetch(url,{...opt,redirect:'manual',signal:AbortSignal.timeout(12000)});return[r,await r.text()]};
-          const [session,sessionBody]=await j('https://capital-ai.online/api/auth/session');
-          if(session.status!==200)throw new Error('auth session '+session.status);
-          const sj=JSON.parse(sessionBody);if(sj.configured!==true)throw new Error('auth not configured');
-          const challenge='A'.repeat(43);
-          const [login]=await j('https://capital-ai.online/api/auth/mobile-login?challenge='+challenge);
-          if(login.status!==303||!String(login.headers.get('location')||'').startsWith('https://'))throw new Error('mobile login contract');
-          const [paprika,pBody]=await j('https://api.coinpaprika.com/v1/tickers?quotes=USD');if(paprika.status!==200||JSON.parse(pBody).length<400)throw new Error('top400 source');
-          const end=new Date(Date.now()+86400000).toISOString().slice(0,10),start=new Date(Date.now()-90*86400000).toISOString().slice(0,10);
-          const [history,hBody]=await j('https://api.coinpaprika.com/v1/tickers/btc-bitcoin/historical?start='+start+'&end='+end+'&interval=24h&quote=usd');if(history.status!==200||JSON.parse(hBody).length<20)throw new Error('coinpaprika history');
-          let binanceStatus='NOT_OBSERVABLE';try{const [binance,bBody]=await j('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=60');binanceStatus=binance.status===200&&JSON.parse(bBody).length>=40?'PASS':'DEGRADED'}catch{binanceStatus='DEGRADED'}
-          console.log(JSON.stringify({auth:'PASS',mobileLogin:'PASS',top400:'PASS',marketData:'PASS',coinPaprikaHistory:'PASS',binance:binanceStatus,localScorer:'PASS'}));
-          NODE
+      - name: OSS Chromium mit festem SHA-256 bereitstellen
+        run: ./scripts/setup-chromium.sh
       - name: Mobile Source Secret Scan
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           version: v0.74.0
           scan-type: fs
@@ -67,6 +36,8 @@ jobs:
           scanners: secret,misconfig
           severity: HIGH,CRITICAL
           exit-code: '1'
+      - name: Mobile Unit Browser und Live Contract Gates
+        run: ./scripts/quality.sh
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
@@ -76,12 +47,12 @@ jobs:
           gradle-version: '8.13'
           cache-provider: basic
       - name: Android APK kompilieren
-        run: gradle -p android --no-daemon :app:assembleDebug :app:assembleRelease
+        run: gradle -p android --no-daemon :app:assembleDebug :app:assembleRelease :app:lintRelease
       - name: Artifact Hashes
         run: |
           mkdir -p evidence
           sha256sum android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/release/app-release-unsigned.apk | tee evidence/SHA256SUMS.txt
-          cp browser-emulation.html evidence/
+          test -f evidence/browser-emulation.html
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: capital-ai-mobile-apk
