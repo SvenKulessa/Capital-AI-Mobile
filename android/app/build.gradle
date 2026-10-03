@@ -1,9 +1,9 @@
 plugins { id 'com.android.application' }
 android {
-  namespace 'de.svenkulessa.capitalai.privateapp'
+  namespace 'de.svenkulessa.capitalai.mobile'
   compileSdk 36
   defaultConfig {
-    applicationId "de.svenkulessa.capitalai.privateapp"
+    applicationId "de.svenkulessa.capitalai.mobile"
     minSdk 26
     targetSdk 36
     versionCode 2

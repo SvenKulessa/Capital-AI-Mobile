@@ -1,4 +1,4 @@
-package de.svenkulessa.capitalai.privateapp;
+package de.svenkulessa.capitalai.mobile;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
