@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'">
+  <title>Capital-AI Mobile</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="brand">CAPITAL-<span>AI</span> · MOBILE</div>
+      <div class="row"><span id="authState" class="pill">Konto wird geprüft…</span><button id="loginButton">Anmelden</button></div>
+    </header>
+
+    <section class="hero">
+      <div><div class="eyebrow">ENTERPRISE MARKET INTELLIGENCE</div><h1>Enterprise Scorer</h1>
+      <p>Finance-Provenance · Top-400 Research Universe · lokaler Score · serverseitiger Drift-Vergleich</p></div>
+      <div class="scoreRing"><span id="scoreValue">—</span><small>/100</small></div>
+    </section>
+
+    <section class="card controls">
+      <label>Asset<select id="assetSelect"></select></label>
+      <div class="timeframes"><button data-tf="1h">1h</button><button data-tf="4h">4h</button><button data-tf="1d" class="active">1d</button></div>
+      <button id="refreshButton">Neu laden</button>
+    </section>
+
+    <section class="grid">
+      <article class="card"><h2>Kanonischer Mobile-Score</h2><div id="scoreMeta" class="muted">—</div><div id="factorGrid" class="factorGrid"></div></article>
+      <article class="card"><h2>Sentiment</h2><div id="sentiment" class="big">—</div><p class="muted">Anzeige/Evidence בלבד; kein Score-Gewicht.</p><div id="modelAuthority" class="muted">Local Authority: Finance crypto-technical-provenance@0.7.0</div></article>
+    </section>
+
+    <section class="card"><div class="row between"><div><h2>Chart & aktive Pattern</h2><div id="sourceLine" class="muted">—</div></div><div id="patternPriority" class="planets">—</div></div>
+      <canvas id="chart" width="920" height="420"></canvas>
+      <div id="patterns" class="patterns"></div>
+    </section>
+
+    <section class="card qa" id="qaPanel"><h2>Runtime-Qualität</h2>
+      <span id="qaLogin" class="pill">Login —</span><span id="qaData" class="pill">Daten —</span><span id="qaScore" class="pill">Scoring —</span>
+    </section>
+
+    <footer>Private Research · keine Anlageberatung · keine Trade-Authority</footer>
+  </main>
+  <script src="/scoring.js"></script>
+  <script src="/providers.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
