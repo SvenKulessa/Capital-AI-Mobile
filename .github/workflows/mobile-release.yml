@@ -1,0 +1,97 @@
+name: Mobile Release — bestehende Signing-Identity
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mobile-private-release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: '24.18.0'
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
+        with:
+          gradle-version: '8.13'
+          cache-disabled: true
+      - name: Android Build Tools festlegen
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: OSS Chromium mit festem SHA-256 bereitstellen
+        run: ./scripts/setup-chromium.sh
+      - name: Secret und Misconfiguration Scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          version: v0.74.0
+          scan-type: fs
+          scan-ref: .
+          scanners: secret,misconfig
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          cache: 'false'
+      - name: Qualität vor dem Build
+        run: ./scripts/quality.sh
+      - name: Unsigned Release bauen und Android Lint
+        run: gradle -p android --no-daemon :app:assembleRelease :app:lintRelease
+      - name: Bestehenden Key geschützt laden und mit apksigner signieren
+        env:
+          MOBILE_RELEASE_KEYSTORE_BASE64: ${{ secrets.MOBILE_RELEASE_KEYSTORE_BASE64 }}
+          MOBILE_RELEASE_PASSWORD: ${{ secrets.MOBILE_RELEASE_PASSWORD }}
+          MOBILE_KEYSTORE_FILE: ${{ runner.temp }}/capital-ai-mobile-signing/release.p12
+          MOBILE_PASSWORD_FILE: ${{ runner.temp }}/capital-ai-mobile-signing/password.txt
+        shell: bash
+        run: |
+          set +x
+          set -euo pipefail
+          umask 077
+          trap 'rm -rf "$RUNNER_TEMP/capital-ai-mobile-signing"' EXIT
+          python3 - <<'PY'
+          import base64,os
+          from pathlib import Path
+          key=os.environ.pop('MOBILE_RELEASE_KEYSTORE_BASE64','')
+          password=os.environ.pop('MOBILE_RELEASE_PASSWORD','')
+          if not key or not password: raise SystemExit('Existing signing secrets missing; release blocked')
+          if '\n' in password or '\r' in password: raise SystemExit('Invalid password format; release blocked')
+          directory=Path(os.environ['MOBILE_KEYSTORE_FILE']).parent
+          directory.mkdir(mode=0o700,parents=True,exist_ok=True)
+          directory.chmod(0o700)
+          Path(os.environ['MOBILE_KEYSTORE_FILE']).write_bytes(base64.b64decode(key,validate=True))
+          Path(os.environ['MOBILE_PASSWORD_FILE']).write_text(password+'\n')
+          for var in ('MOBILE_KEYSTORE_FILE','MOBILE_PASSWORD_FILE'): Path(os.environ[var]).chmod(0o600)
+          PY
+          unset MOBILE_RELEASE_KEYSTORE_BASE64 MOBILE_RELEASE_PASSWORD
+          ./scripts/sign-release.sh
+      - name: Signing-Dateien immer entfernen
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/capital-ai-mobile-signing"
+      - name: Ausschließlich geprüfte private Release-APK bereitstellen
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: Capital-AI-Mobile-0.2.0-release
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            evidence/Capital-AI-Mobile-0.2.0-release.apk
+            evidence/SHA256SUMS.txt
+            evidence/SOURCE_COMMIT.txt
+            evidence/signature-verification.txt
+            evidence/unsigned-badging.txt
+            evidence/zipalign-before.txt
+            evidence/zipalign-after.txt
+            evidence/unit-tests.txt
+            evidence/browser-emulation.html
+            evidence/live-contracts.log
+            evidence/quality-gates.txt
+            evidence/source-scan.txt
+            evidence/apk-secret-scan.txt
