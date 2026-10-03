@@ -1,0 +1,120 @@
+name: Finance Scoring Security Preflight
+
+on:
+  push:
+    branches:
+      - capital-ai-mobile/scorer-migration-20261003
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  finance-scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Mobile repository auschecken
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+          path: mobile
+
+      - name: Finance exakt auschecken
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          repository: SvenKulessa/Finance
+          ref: dcef421fe6e350a3a2ade61d0299aad9ecca213c
+          persist-credentials: false
+          path: finance
+
+      - name: Node.js 24
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v4.4.0
+        with:
+          node-version: '24.18.0'
+          cache: npm
+          cache-dependency-path: finance/package-lock.json
+
+      - name: Finance Lockfile und Produktionsgraph prüfen
+        working-directory: finance
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum package-lock.json
+          npm ci --ignore-scripts
+          npm ls --all --json > ../mobile/finance-production-graph.json
+
+      - name: npm Advisories fail-closed prüfen
+        working-directory: finance
+        shell: bash
+        run: |
+          set -uo pipefail
+          npm audit --omit=dev --json > ../mobile/finance-npm-audit.json
+          status=$?
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const report = JSON.parse(fs.readFileSync('../mobile/finance-npm-audit.json','utf8'));
+          const v = report?.metadata?.vulnerabilities;
+          if (!v) throw new Error('npm audit evidence missing');
+          const high = Number(v.high||0), critical = Number(v.critical||0);
+          console.log(JSON.stringify({critical,high,moderate:Number(v.moderate||0),low:Number(v.low||0),total:Number(v.total||0)},null,2));
+          if (critical > 0 || high > 0) process.exit(1);
+          NODE
+          node_status=$?
+          if [ "$node_status" -ne 0 ]; then exit "$node_status"; fi
+          if [ "$status" -gt 1 ]; then exit "$status"; fi
+
+      - name: Finance Scoring Regression
+        working-directory: finance
+        run: |
+          npx vitest run             tests/unit/scoringDispatcher.test.ts             tests/unit/scoringModelRegistry.test.ts             tests/unit/verifiedCryptoTechnicalScoring.test.ts             tests/unit/scoringIntegrity.test.ts
+
+      - name: Finance TypeScript
+        working-directory: finance
+        run: npx tsc --noEmit
+
+      - name: Trivy Source Secret Misconfig und Vulnerability Scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.74.0
+          scan-type: fs
+          scan-ref: finance
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+          exit-code: '1'
+          format: json
+          output: mobile/finance-trivy.json
+
+      - name: Scoring Source Security Invariants
+        working-directory: finance
+        shell: bash
+        run: |
+          set -euo pipefail
+          paths=(
+            src/platform/Scoring/ScoringDispatcher.ts
+            src/platform/Scoring/ScoringModelRegistry.ts
+            src/platform/Scoring/contracts.ts
+            src/services/verifiedCryptoTechnicalScoring.ts
+            src/services/cryptoScoringService.ts
+            src/services/scoringIntegrity.ts
+            src/services/realMarketSignals.ts
+          )
+          for p in "${paths[@]}"; do test -f "$p"; done
+          ! grep -REn --include='*.ts' '\beval\s*\(|new Function\s*\(|child_process|execSync\(|spawn\(' "${paths[@]}"
+          ! grep -REn --include='*.ts' 'process\.env|import\.meta\.env|localStorage|sessionStorage|document\.cookie' "${paths[@]}"
+          grep -Fq "scoreEligible: false" src/platform/Scoring/ScoringModelRegistry.ts
+          grep -Fq "verified-required" src/platform/Scoring/ScoringModelRegistry.ts
+          grep -Fq "minimumCoverage: 0.5" src/services/verifiedCryptoTechnicalScoring.ts
+
+      - name: Security Evidence bereitstellen
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: finance-scoring-security-preflight
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            mobile/finance-npm-audit.json
+            mobile/finance-trivy.json
+            mobile/finance-production-graph.json
