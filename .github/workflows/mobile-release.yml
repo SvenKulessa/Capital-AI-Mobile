@@ -75,6 +75,17 @@ jobs:
       - name: Signing-Dateien immer entfernen
         if: always()
         run: rm -rf "$RUNNER_TEMP/capital-ai-mobile-signing"
+      - name: Release-Gate-Diagnose auch bei Fehler bereitstellen
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: mobile-release-diagnostics
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            evidence/quality-gates.txt
+            evidence/unit-tests.txt
+            evidence/live-contracts.log
       - name: Ausschließlich geprüfte private Release-APK bereitstellen
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:

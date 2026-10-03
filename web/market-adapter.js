@@ -28,7 +28,9 @@
     if(observedAt-result.at(-1).time>step*2)throw new Error('STALE_MARKET_DATA');
     return Object.freeze(result);
   }
-  const api=Object.freeze({requireAdmission,series,policy:Object.freeze({verified:false,status:'BLOCKED_SOURCE_ADMISSION',endpoint:null})});
+  function deepFreeze(value){if(value&&typeof value==='object'){Object.values(value).forEach(deepFreeze);Object.freeze(value);}return value;}
+  const universePolicy=deepFreeze({"sourceRepository":"SvenKulessa/Capital-AI","sourceMainSha":"3c8cd0d4fa1745d60282132de48f722f48857fcb","targets":{"crypto":500,"stocks":300,"commodities":100,"forex":100,"indices":300},"firstTestPerClass":20,"incrementTotal":50,"productionActivation":false,"mobileSupportedScoringClasses":["crypto"],"admittedSources":[],"mobileExclusions":["binance","coingecko"],"status":"BLOCKED_SOURCE_ADMISSION","candidateIds":["ccxt","openbb","fdnpy","lean","vnpy","backtrader","hummingbot","cryptofeed","nautilus_trader","pandas-datareader"],"perpetualClasses":["crypto","stocks","commodities"],"perpetualCounting":"ADDITIONAL_DERIVATIVE_INSTRUMENTS_NOT_BASE_ASSETS","policySha256":"fae8247fe421c27f62dd1fabbda60162c7793657f2151cf09f12d2c519926f0f"});
+  const api=Object.freeze({requireAdmission,series,universePolicy,policy:Object.freeze({verified:false,status:'BLOCKED_SOURCE_ADMISSION',endpoint:null})});
   root.CapitalAIMarketAdapter=api;
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

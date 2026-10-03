@@ -60,7 +60,7 @@ für gesondert freigegebene Quellen verwenden. Mobile bleibt ohne Broker-Secrets
 7. Benchmark: identische Assets/Zeiträume; p50/p95/p99, Quote-Abweichung gegen
    unabhängige Referenz, Freshness, Gap-/Duplikatrate, OHLCV-Coverage, Quota,
    deterministischer Replay und gleichzeitige Scoreability messen.
-8. Top-400: 400 reale eindeutige Assets und tatsächliche Score-Coverage belegen;
+8. Multi-Asset: zunächst 20 reale eindeutige Assets je Klasse; Ausbauziele und zusätzliche Perpetuals gemäß `MOBILE_MARKET_POLICY.json`; tatsächliche klassenspezifische Score-Coverage belegen;
    vorhandene Fixtures beweisen keine Produktionsabdeckung.
 9. Promotion erst nach erfolgreichen Source-, Data-, Replay- und Mobile-Gates.
 

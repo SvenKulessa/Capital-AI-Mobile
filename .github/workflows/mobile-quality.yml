@@ -38,6 +38,17 @@ jobs:
           exit-code: '1'
       - name: Mobile Unit Browser und Live Contract Gates
         run: ./scripts/quality.sh
+      - name: Gate-Diagnose auch bei Fehler bereitstellen
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: mobile-quality-diagnostics
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            evidence/quality-gates.txt
+            evidence/unit-tests.txt
+            evidence/live-contracts.log
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin

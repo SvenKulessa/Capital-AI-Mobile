@@ -1,3 +1,5 @@
+> Historische Evidence vom 2026-10-03: kein Nachweis des aktuellen Heads. Die Top-400-Zielvorgabe ist durch `MOBILE_MARKET_POLICY.json` superseded.
+
 # Mobile Release 0.2.0 — Prüfnachweis und Freigabesperre
 
 **Status: BLOCKED / keine freigegebene APK.**

@@ -54,9 +54,13 @@ Browser-Emulation prüft UI/Login-Status/Daten/Scoring mit Testdaten. Live-Auth-
 prüfen konfigurierte Session und HTTPS-Weiterleitung des Mobile-Login-Endpoints.
 Sie ersetzen keine interaktive Anmeldung mit einem echten Benutzer und keinen
 Android-Geräte-/Instrumentierungstest. Es gibt aktuell keine zugelassene OSS-Marktdatenquelle. Der reale
-Top-400-/Kursdaten-Gate blockiert die APK-Freigabe ausdrücklich.
+Multi-Asset-/Kursdaten-Gate blockiert die APK-Freigabe ausdrücklich.
 
 Der Workflow erstellt weder einen öffentlichen GitHub Release noch ein Deployment.
 Bitidentische Builds auf unterschiedlichen Runnern sind durch die festgelegte
 Signing-Identity allein nicht nachgewiesen; SHA-256 und Source-Commit kennzeichnen
 jede konkret geprüfte APK.
+
+## Aktualisierte Asset-Authority (2026-10-04)
+
+`docs/MOBILE_MARKET_POLICY.json` ersetzt die Top-400-Zielvorgabe durch den gepinnten Web-Plan: Pilot mit 20 realen Assets je Klasse; Ausbauziele 500/300/100/100/300. Perpetuals zusätzlich. Die Zahlen sind Ziele, keine aktuelle Coverage-Evidence. `scripts/live-contracts.mjs` berichtet Source-Admission, Auth und Live-Universe unabhängig; fehlende Quellen bleiben FAIL. Kein interaktiver Android-Login oder Installationsupgrade ist durch den HTTP-Redirect-Test nachgewiesen.

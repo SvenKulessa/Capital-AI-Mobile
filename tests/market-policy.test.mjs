@@ -1,0 +1,32 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {createHash} from 'node:crypto';
+import {createRequire} from 'node:module';
+const adapter=createRequire(import.meta.url)('../web/market-adapter.js');
+const bytes=fs.readFileSync('docs/MOBILE_MARKET_POLICY.json');
+const policy=JSON.parse(bytes);
+test('packaged policy is tied to the complete pinned web policy projection',()=>{
+  assert.equal(adapter.universePolicy.policySha256,createHash('sha256').update(bytes).digest('hex'));
+  assert.equal(adapter.universePolicy.sourceMainSha,policy.sourceMainSha);
+  assert.deepEqual(adapter.universePolicy.targets,policy.targets);
+  assert.equal(policy.firstTestPerClass,20);
+  const first=policy.stages[0],last=policy.stages.at(-1);
+  assert.equal(first.total,100);
+  assert.ok(Object.values(first.counts).every(n=>n===20));
+  assert.deepEqual(last.counts,policy.targets);
+  assert.equal(last.total,1300);
+  for(let i=1;i<policy.stages.length;i++)assert.equal(policy.stages[i].total-policy.stages[i-1].total,50);
+});
+test('candidate lists and perpetual policy never authorize unverified market feeds',()=>{
+  assert.deepEqual(adapter.universePolicy.candidateIds,policy.candidates.map(x=>x.id));
+  assert.equal(policy.candidates.length,10);
+  assert.ok(policy.candidates.every(x=>x.commercialAdmission==='BLOCKED_PENDING_EVIDENCE'));
+  assert.deepEqual(adapter.universePolicy.admittedSources,[]);
+  assert.equal(adapter.universePolicy.productionActivation,false);
+  assert.equal(policy.additionalPerpetuals.counting,'ADDITIONAL_DERIVATIVE_INSTRUMENTS_NOT_BASE_ASSETS');
+  assert.equal(policy.additionalPerpetuals.activation,false);
+  assert.equal(policy.commercialPolicy.unknownRightsMayPass,false);
+  assert.throws(()=>adapter.requireAdmission(adapter.policy),/ADMISSION_REQUIRED/);
+  assert.throws(()=>{adapter.universePolicy.targets.crypto=1},TypeError);
+});

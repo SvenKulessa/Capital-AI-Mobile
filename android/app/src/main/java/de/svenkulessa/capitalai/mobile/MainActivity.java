@@ -27,6 +27,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 
@@ -35,6 +37,7 @@ public final class MainActivity extends ComponentActivity {
   private static final String LOCAL_URL="https://"+LOCAL_HOST+"/index.html";
   private static final String APP_ORIGIN="https://capital-ai.online";
   private static final SecureRandom RANDOM=new SecureRandom();
+  private static final List<String> STATIC_ASSETS=Arrays.asList("/index.html","/styles.css","/scoring.js","/market-adapter.js","/providers.js","/app.js");
   private WebView webView;
 
   private static String b64(byte[] v){return Base64.encodeToString(v,Base64.URL_SAFE|Base64.NO_WRAP|Base64.NO_PADDING);}
@@ -76,6 +79,7 @@ public final class MainActivity extends ComponentActivity {
           String m=String.valueOf(method).toUpperCase(Locale.ROOT);Uri uri=Uri.parse(rawUrl);
           if(!allowed(uri,m))throw new SecurityException("blocked_url");
           HttpURLConnection c=(HttpURLConnection)new URL(rawUrl).openConnection();c.setInstanceFollowRedirects(false);c.setConnectTimeout(7000);c.setReadTimeout(9000);c.setRequestMethod(m);c.setRequestProperty("Accept","application/json");c.setRequestProperty("User-Agent","Capital-AI-Mobile/0.2");
+          c.setUseCaches(false);c.setRequestProperty("Cache-Control","no-store");
           String cookie=CookieManager.getInstance().getCookie(rawUrl);if(cookie!=null&&!cookie.trim().isEmpty())c.setRequestProperty("Cookie",cookie);
           if("POST".equals(m)){byte[] bytes=(body==null?"":body).getBytes(StandardCharsets.UTF_8);if(bytes.length>65536)throw new SecurityException("body_too_large");c.setDoOutput(true);c.setRequestProperty("Content-Type","application/json");c.getOutputStream().write(bytes);}
           status=c.getResponseCode();setCookies(c,uri.getScheme()+"://"+uri.getHost());InputStream in=status>=400?c.getErrorStream():c.getInputStream();response=new String(readBounded(in,10*1024*1024),StandardCharsets.UTF_8);c.disconnect();
@@ -86,14 +90,29 @@ public final class MainActivity extends ComponentActivity {
   }
 
   private WebResourceResponse local(WebResourceRequest request){
-    Uri u=request.getUrl();if(!LOCAL_HOST.equals(u.getHost()))return null;String path=u.getPath();if(path==null||"/".equals(path))path="/index.html";if(path.contains(".."))return new WebResourceResponse("text/plain","utf-8",null);
+    Uri u=request.getUrl();if(!LOCAL_HOST.equals(u.getHost()))return null;String path=u.getPath();if(path==null||"/".equals(path))path="/index.html";
+    if(!"https".equals(u.getScheme())||(u.getPort()!=-1&&u.getPort()!=443)||u.getUserInfo()!=null||!"GET".equals(request.getMethod())||!STATIC_ASSETS.contains(path))return new WebResourceResponse("text/plain","utf-8",404,"Not Found",Collections.singletonMap("Cache-Control","no-store"),null);
     String mime=path.endsWith(".js")?"text/javascript":path.endsWith(".css")?"text/css":"text/html";
-    try{return new WebResourceResponse(mime,"utf-8",getAssets().open(path.substring(1)));}catch(Exception e){return new WebResourceResponse("text/plain","utf-8",null);}
+    String cacheControl=path.endsWith(".html")?"no-cache":"private, max-age=86400";
+    try{return new WebResourceResponse(mime,"utf-8",200,"OK",Collections.singletonMap("Cache-Control",cacheControl),getAssets().open(path.substring(1)));}catch(Exception e){return new WebResourceResponse("text/plain","utf-8",404,"Not Found",Collections.singletonMap("Cache-Control","no-store"),null);}
+  }
+
+  private void configureStaticCache(){
+    webView.getSettings().setCacheMode(android.webkit.WebSettings.LOAD_DEFAULT);
+    SharedPreferences cachePrefs=getSharedPreferences("static_cache",MODE_PRIVATE);
+    try{
+      long installedAt=getPackageManager().getPackageInfo(getPackageName(),0).lastUpdateTime;
+      if(cachePrefs.getLong("installed_at",-1)!=installedAt){
+        webView.clearCache(true);
+        cachePrefs.edit().putLong("installed_at",installedAt).apply();
+      }
+    }catch(Exception e){webView.clearCache(true);}
   }
 
   @SuppressLint({"SetJavaScriptEnabled","AddJavascriptInterface"})
   @Override protected void onCreate(Bundle state){
     super.onCreate(state);webView=new WebView(this);setContentView(webView);
+    configureStaticCache();
     CookieManager.getInstance().setAcceptCookie(true);CookieManager.getInstance().setAcceptThirdPartyCookies(webView,false);
     webView.getSettings().setJavaScriptEnabled(true);webView.getSettings().setDomStorageEnabled(false);webView.getSettings().setAllowFileAccess(false);webView.getSettings().setAllowContentAccess(false);webView.getSettings().setMixedContentMode(android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW);webView.getSettings().setSafeBrowsingEnabled(true);
     webView.addJavascriptInterface(new Bridge(),"CapitalAI");
@@ -118,6 +137,7 @@ public final class MainActivity extends ComponentActivity {
     new Thread(()->{
       try{
         URL url=new URL(APP_ORIGIN+"/api/auth/mobile-exchange");HttpURLConnection c=(HttpURLConnection)url.openConnection();c.setInstanceFollowRedirects(false);c.setConnectTimeout(7000);c.setReadTimeout(9000);c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("Content-Type","application/x-www-form-urlencoded");
+        c.setUseCaches(false);c.setRequestProperty("Cache-Control","no-store");
         String body="code="+URLEncoder.encode(code,"UTF-8")+"&verifier="+URLEncoder.encode(v,"UTF-8");c.getOutputStream().write(body.getBytes(StandardCharsets.UTF_8));
         int status=c.getResponseCode();setCookies(c,APP_ORIGIN);c.disconnect();webView.post(()->webView.loadUrl(LOCAL_URL+(status==303?"?auth=ok":"?auth=failed")));
       }catch(Exception e){webView.post(()->webView.loadUrl(LOCAL_URL+"?auth=failed"));}
