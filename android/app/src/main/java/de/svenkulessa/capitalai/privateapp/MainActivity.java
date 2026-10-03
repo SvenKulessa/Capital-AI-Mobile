@@ -50,7 +50,7 @@ public final class MainActivity extends Activity {
   private boolean allowed(Uri u,String method){
     if(u==null||!"https".equals(u.getScheme()))return false;
     String h=u.getHost(),p=u.getPath()==null?"":u.getPath();
-    if("capital-ai.online".equals(h))return ("GET".equals(method)&&p.equals("/api/auth/session"))||("POST".equals(method)&&p.equals("/api/crypto/score"));
+    if("capital-ai.online".equals(h))return "GET".equals(method)&&p.equals("/api/auth/session");
     if(!"GET".equals(method))return false;
     return ("api.binance.com".equals(h)&&p.equals("/api/v3/klines"))
       ||("api.coinpaprika.com".equals(h)&&(p.equals("/v1/tickers")||p.matches("^/v1/tickers/[a-z0-9-]+/historical$")))
