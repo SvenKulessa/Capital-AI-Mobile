@@ -5,11 +5,10 @@ Eigenständige private Android-App für CAPITAL-AI. Die Mobile-Oberfläche und d
 ## Architektur
 
 - Android WebView lädt ausschließlich das lokale Bundle unter `https://app.capital-ai.local/`.
-- Authentifizierung startet über den externen Browser mit dem bestehenden CAPITAL-AI Mobile-OIDC/PKCE-Transfer.
+- Authentifizierung startet über den externen Browser mit dem bestehenden CAPITAL-AI Mobile-OIDC/PKCE-Transfer; die Webanwendung wird weder geladen noch als Scoring-Backend verwendet.
 - Marktdaten werden über eine native HTTPS-Bridge von freigegebenen Hosts geladen.
 - Der produktive Mobile-Score wird lokal aus dem aus Finance migrierten `crypto-technical-provenance/0.7.0`-Kern berechnet.
 - Sentiment bleibt Presentation/Evidence und verändert den Score nicht.
-- Optional wird der Server-Score von `capital-ai.online/api/crypto/score` nur als Drift-Vergleich angezeigt.
 - NATS JetStream und Valkey/Redis bleiben serverseitig. Broker-Secrets werden niemals in APK oder Web-Bundle übernommen.
 
 ## Quellen
