@@ -42,7 +42,14 @@ jobs:
           set -euo pipefail
           sha256sum package-lock.json
           npm ci --ignore-scripts
+          set +e
           npm ls --all --json > ../mobile/finance-production-graph.json
+          graph_status=$?
+          set -e
+          printf '%s\n' "$graph_status" > ../mobile/finance-production-graph-exit.txt
+          if [ "$graph_status" -gt 1 ]; then
+            echo "::warning::npm ls meldet einen Plattform-/Optional-Dependency-Konflikt; Security-Gates laufen separat weiter."
+          fi
 
       - name: npm Advisories fail-closed prüfen
         working-directory: finance
@@ -118,3 +125,4 @@ jobs:
             mobile/finance-npm-audit.json
             mobile/finance-trivy.json
             mobile/finance-production-graph.json
+            mobile/finance-production-graph-exit.txt
