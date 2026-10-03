@@ -49,9 +49,11 @@ jobs:
           const [login]=await j('https://capital-ai.online/api/auth/mobile-login?challenge='+challenge);
           if(login.status!==303||!String(login.headers.get('location')||'').startsWith('https://'))throw new Error('mobile login contract');
           const [paprika,pBody]=await j('https://api.coinpaprika.com/v1/tickers?quotes=USD');if(paprika.status!==200||JSON.parse(pBody).length<400)throw new Error('top400 source');
-          const [binance,bBody]=await j('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=60');if(binance.status!==200||JSON.parse(bBody).length<40)throw new Error('binance history');
+          const end=new Date(Date.now()+86400000).toISOString().slice(0,10),start=new Date(Date.now()-90*86400000).toISOString().slice(0,10);
+          const [history,hBody]=await j('https://api.coinpaprika.com/v1/tickers/btc-bitcoin/historical?start='+start+'&end='+end+'&interval=24h&quote=usd');if(history.status!==200||JSON.parse(hBody).length<20)throw new Error('coinpaprika history');
+          let binanceStatus='NOT_OBSERVABLE';try{const [binance,bBody]=await j('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=60');binanceStatus=binance.status===200&&JSON.parse(bBody).length>=40?'PASS':'DEGRADED'}catch{binanceStatus='DEGRADED'}
           const [score]=await j('https://capital-ai.online/api/crypto/score',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});if(score.status!==400)throw new Error('scorer contract '+score.status);
-          console.log(JSON.stringify({auth:'PASS',mobileLogin:'PASS',top400:'PASS',marketData:'PASS',scorerContract:'PASS'}));
+          console.log(JSON.stringify({auth:'PASS',mobileLogin:'PASS',top400:'PASS',marketData:'PASS',coinPaprikaHistory:'PASS',binance:binanceStatus,scorerContract:'PASS'}));
           NODE
       - name: Mobile Source Secret Scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
