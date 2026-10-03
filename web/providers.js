@@ -9,7 +9,6 @@
     if(url.includes('/historical')){const rows=[];const now=Date.now();for(let i=0;i<90;i++)rows.push({timestamp:new Date(now-(90-i)*86400000).toISOString(),price:50000+i*110+Math.sin(i/4)*300,volume_24h:1e9+i*1e6,market_cap:1e12});return Promise.resolve({status:200,body:JSON.stringify(rows)})}
     if(url.includes('binance.com')){const rows=[];const now=Date.now();for(let i=0;i<90;i++){const base=50000+i*110+Math.sin(i/4)*300;rows.push([now-(90-i)*86400000,String(base-80),String(base+260),String(base-300),String(base+120),String(1000+i*3)])}return Promise.resolve({status:200,body:JSON.stringify(rows)})}
     if(url.includes('alternative.me'))return Promise.resolve({status:200,body:JSON.stringify({data:[{value:'62',value_classification:'Greed'}]})});
-    if(url.includes('/api/crypto/score'))return Promise.resolve({status:200,body:JSON.stringify({status:'READY',final_score:74.2,modelRegistry:{modelId:'crypto-technical-provenance',modelVersion:'0.7.0'}})});
     return Promise.reject(new Error('mock route missing '+url));
   }
   function request(method,url,body=''){
@@ -26,6 +25,5 @@
   async function paprikaSeries(asset,tf){if(!asset?.id)throw new Error('COINPAPRIKA_ID_MISSING');const now=Date.now(),hourly=tf==='1h'||tf==='4h',start=isoDay(now-(hourly?24:120*24)*3600000),end=isoDay(now+86400000),interval=hourly?'1h':'24h';const rows=await json('GET',`https://api.coinpaprika.com/v1/tickers/${encodeURIComponent(asset.id)}/historical?start=${start}&end=${end}&interval=${interval}&quote=usd`);if(!Array.isArray(rows)||!rows.length)throw new Error('COINPAPRIKA_HISTORY_UNAVAILABLE');let points=rows.map(r=>({time:Date.parse(r.timestamp)/1000,close:Number(r.price),volume:Number(r.volume_24h||0),source:'CoinPaprika',kind:'point'})).filter(r=>Number.isFinite(r.time)&&Number.isFinite(r.close)&&r.close>0).sort((a,b)=>a.time-b.time);if(tf==='4h'){const grouped=[];for(let i=0;i<points.length;i+=4){const chunk=points.slice(i,i+4);if(chunk.length)grouped.push(chunk.at(-1));}points=grouped;}return points}
   async function marketSeries(asset,tf){try{return await binanceSeries(asset,tf)}catch(binanceError){const fallback=await paprikaSeries(asset,tf);return fallback.map(x=>({...x,fallbackReason:String(binanceError?.message||'BINANCE_UNAVAILABLE')}))}}
   async function sentiment(){const x=await json('GET','https://api.alternative.me/fng/?limit=1');const row=x.data?.[0],n=Number(row?.value);return{points:Number.isFinite(n)?Math.round(n):null,label:row?.value_classification||null}}
-  async function remoteScore(symbol,name){return json('POST','https://capital-ai.online/api/crypto/score',{symbol,asset_name:name})}
-  root.CapitalAIProviders={session,login,universe,marketSeries,sentiment,remoteScore,emulate};
+  root.CapitalAIProviders={session,login,universe,marketSeries,sentiment,emulate};
 })(window);
