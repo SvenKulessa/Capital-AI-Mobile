@@ -1,0 +1,84 @@
+{
+  "schema": "CAPITAL_AI_MOBILE_SOURCE_ADMISSION_PROJECTION@1",
+  "observedAt": "2026-10-05T01:42:00+02:00",
+  "mobileSourceCommit": "17be3d472552e229d079baa3b11a08405275118d",
+  "webSourceCommit": "8045c78956e163af3011ed47f734184aca14aa04",
+  "webEvidenceBranch": "capital-ai-market/source-admission-manifest-20261005",
+  "webEvidenceHead": "22d32ebe31025221c5b8d9518877bea40af7aaa0",
+  "webPullRequest": 163,
+  "sourceRightsMatrix": {
+    "path": "docs/market-data/evidence/source-rights-matrix-20261005.json",
+    "canonicalPayloadSha256": "a95fcd4764f1059e6db99b4e1e00a703593b323a8307f6c6497b99e02f2b3c13"
+  },
+  "instrumentManifest": {
+    "path": "docs/market-data/evidence/instrument-manifest-20261005.json",
+    "manifestVersion": "2026-10-05.1",
+    "canonicalPayloadSha256": "e17ca830202f92dae9f2e127c33b53ad05ad3d5d31fce00f120b1d2efea00298",
+    "status": "PARTIAL_FAIL_CLOSED"
+  },
+  "currentMobileRuntime": {
+    "supportedScoringClasses": [
+      "crypto"
+    ],
+    "providerAdmissionPolicy": "verified=false",
+    "providerEndpoint": null,
+    "liveAdapterMutation": false,
+    "fixtureCountsAsEvidence": false
+  },
+  "coverage": {
+    "basisInstruments": {
+      "crypto": 0,
+      "stocks": 20,
+      "commodities": 0,
+      "forex": 20,
+      "indices": 0
+    },
+    "basisLiveMarketDataAdmitted": {
+      "crypto": 0,
+      "stocks": 0,
+      "commodities": 0,
+      "forex": 0,
+      "indices": 0
+    },
+    "perpetualsObserved": {
+      "crypto": 1,
+      "stocks": 0,
+      "commodities": 0
+    },
+    "scoreableInMobile": {
+      "crypto": 0,
+      "stocks": 0,
+      "commodities": 0,
+      "forex": 0,
+      "indices": 0
+    }
+  },
+  "gates": {
+    "OSS_SOURCE_ADMISSION": {
+      "status": "FAIL",
+      "closeRequires": [
+        "At least one concrete provider+dataset+venue with qualifying Open-Data rights for Mobile commercial display and derived scoring",
+        "Verified cache/replay/retention and attribution obligations",
+        "Server-side endpoint and immutable evidence hash",
+        "No Binance or CoinGecko"
+      ]
+    },
+    "MULTI_ASSET_LIVE_UNIVERSE": {
+      "status": "FAIL",
+      "closeRequires": [
+        "20 real basis instruments per required class without class substitution",
+        "Admitted live market-data fields and freshness evidence for each instrument",
+        "Deduplicated canonical identities and ranking evidence",
+        "Separate perpetual coverage only as additional derivatives",
+        "Mobile scoring eligibility remains crypto-only until class-specific scorers are implemented and validated"
+      ]
+    }
+  },
+  "trustHandoff": "BLOCKED_PENDING_MARKET_EVIDENCE",
+  "prohibitedInferences": [
+    "SEC listing identity is not price/OHLCV data admission",
+    "ECB reference rates are not executable spot quotes",
+    "Deribit public catalogue is not proof of commercial redistribution rights",
+    "OSS software licence is not a market-data licence"
+  ]
+}
