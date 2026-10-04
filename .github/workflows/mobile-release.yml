@@ -41,6 +41,8 @@ jobs:
           exit-code: '1'
           cache: 'false'
       - name: Qualität vor dem Build
+        env:
+          MOBILE_QUALITY_MODE: release
         run: ./scripts/quality.sh
       - name: Unsigned Release bauen und Android Lint
         run: gradle -p android --no-daemon :app:assembleRelease :app:lintRelease
