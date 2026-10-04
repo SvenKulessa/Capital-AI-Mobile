@@ -1,14 +1,28 @@
 {
   "schema": "CAPITAL_AI_MOBILE_SOURCE_ADMISSION_PROJECTION@1",
-  "observedAt": "2026-10-05T01:42:00+02:00",
+  "observedAt": "2026-10-05T02:08:00+02:00",
   "mobileSourceCommit": "17be3d472552e229d079baa3b11a08405275118d",
   "webSourceCommit": "8045c78956e163af3011ed47f734184aca14aa04",
   "webEvidenceBranch": "capital-ai-market/source-admission-manifest-20261005",
-  "webEvidenceHead": "22d32ebe31025221c5b8d9518877bea40af7aaa0",
+  "webEvidenceHead": "e0f06973e8eaea78ebb4db8f3a7146afba1616c6",
   "webPullRequest": 163,
   "sourceRightsMatrix": {
     "path": "docs/market-data/evidence/source-rights-matrix-20261005.json",
     "canonicalPayloadSha256": "a95fcd4764f1059e6db99b4e1e00a703593b323a8307f6c6497b99e02f2b3c13"
+  },
+  "openDataRightsAddendum": {
+    "path": "docs/market-data/evidence/open-data-rights-addendum-20261005.json",
+    "canonicalPayloadSha256": "fab21f80b32ed812393bc8dc4dbfed2020828f139d5bc86ca2d3770d52ada53c"
+  },
+  "ecbRightsEvidence": {
+    "path": "docs/market-data/evidence/ecb-rights-evidence-20261005.json",
+    "canonicalPayloadSha256": "d6520cc1576f4e79987ba1d5fed4e2a93d7fa130d7103f6a352d9f4758fb2499"
+  },
+  "commodityReferenceManifest": {
+    "path": "docs/market-data/evidence/commodity-reference-manifest-20261005.json",
+    "manifestVersion": "2026-10-05.1",
+    "canonicalPayloadSha256": "7dfa124b4449f27d9b752bc8e39741c328d5a31884e1f5cea5ebab1db8a86255",
+    "status": "REFERENCE_COVERAGE_PASS_SCORING_FAIL"
   },
   "instrumentManifest": {
     "path": "docs/market-data/evidence/instrument-manifest-20261005.json",
@@ -29,9 +43,16 @@
     "basisInstruments": {
       "crypto": 0,
       "stocks": 20,
-      "commodities": 0,
+      "commodities": 20,
       "forex": 20,
       "indices": 0
+    },
+    "basisCoverageSemantics": {
+      "crypto": "NONE",
+      "stocks": "LISTING_IDENTITY_ONLY",
+      "commodities": "MONTHLY_REFERENCE_SERIES_ONLY",
+      "forex": "DAILY_REFERENCE_RATES_ONLY",
+      "indices": "NONE"
     },
     "basisLiveMarketDataAdmitted": {
       "crypto": 0,
@@ -40,8 +61,8 @@
       "forex": 0,
       "indices": 0
     },
-    "perpetualsObserved": {
-      "crypto": 1,
+    "perpetualsObservedButAdmitted": {
+      "crypto": 0,
       "stocks": 0,
       "commodities": 0
     },
@@ -53,32 +74,59 @@
       "indices": 0
     }
   },
+  "exclusions": {
+    "binance": "OWNER_POLICY",
+    "coingecko": "OWNER_POLICY",
+    "deribit": "PERSONAL_USE_ONLY_WITHOUT_PRIOR_WRITTEN_APPROVAL",
+    "kraken": "NON_PERSONAL_COMMERCIAL_PUBLIC_API_USE_REQUIRES_PRIOR_PERMISSION",
+    "coinMetricsCommunity": "CC_BY_NC_NONCOMMERCIAL"
+  },
+  "ci": {
+    "workflowRun": 37244733903,
+    "result": "FAIL",
+    "passes": [
+      "UNIT_14_OF_14",
+      "BROWSER",
+      "SOURCE_SECRET_SCAN"
+    ],
+    "expectedMarketFailures": [
+      "OSS_SOURCE_ADMISSION",
+      "MULTI_ASSET_LIVE_UNIVERSE"
+    ],
+    "blockingFailures": [
+      "AUTH_CONFIGURATION:AUTH_NOT_CONFIGURED",
+      "MOBILE_LOGIN_REDIRECT:MOBILE_LOGIN_HTTP_503"
+    ],
+    "diagnosticEvidenceSha256": "34a356ba6e0da4c938e291b33ccbfafb780f46ff964cef02e07a23cefce144f7"
+  },
   "gates": {
     "OSS_SOURCE_ADMISSION": {
       "status": "FAIL",
       "closeRequires": [
-        "At least one concrete provider+dataset+venue with qualifying Open-Data rights for Mobile commercial display and derived scoring",
-        "Verified cache/replay/retention and attribution obligations",
-        "Server-side endpoint and immutable evidence hash",
-        "No Binance or CoinGecko"
+        "Qualifying commercial Open-Data source for actual Mobile crypto market data",
+        "Verified display/derived-scoring/cache/replay/retention rights",
+        "Server-side endpoint and immutable evidence binding",
+        "No excluded provider substitution"
       ]
     },
     "MULTI_ASSET_LIVE_UNIVERSE": {
       "status": "FAIL",
       "closeRequires": [
         "20 real basis instruments per required class without class substitution",
-        "Admitted live market-data fields and freshness evidence for each instrument",
+        "Admitted market-data fields and freshness evidence for each instrument",
         "Deduplicated canonical identities and ranking evidence",
+        "Reference-series coverage must not be represented as OHLCV/spot coverage",
         "Separate perpetual coverage only as additional derivatives",
         "Mobile scoring eligibility remains crypto-only until class-specific scorers are implemented and validated"
       ]
     }
   },
-  "trustHandoff": "BLOCKED_PENDING_MARKET_EVIDENCE",
+  "trustHandoff": "BLOCKED_PENDING_MARKET_AND_AUTH_EVIDENCE",
   "prohibitedInferences": [
     "SEC listing identity is not price/OHLCV data admission",
     "ECB reference rates are not executable spot quotes",
-    "Deribit public catalogue is not proof of commercial redistribution rights",
+    "World Bank Pink Sheet monthly reference series are not executable spot instruments or OHLCV",
+    "Deribit market data may not be promoted under current terms",
     "OSS software licence is not a market-data licence"
   ]
 }
