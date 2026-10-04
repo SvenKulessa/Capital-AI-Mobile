@@ -30,13 +30,26 @@ if [[ -x "$chrome" ]] && timeout --kill-after=5s 30s "$chrome" --headless=new --
   done
 fi
 if [[ "$browser_ok" == true ]]; then record BROWSER PASS; else record BROWSER FAIL; fi
-if node scripts/live-contracts.mjs >evidence/live-contracts.log 2>&1; then record LIVE_CONTRACTS PASS; else record LIVE_CONTRACTS FAIL; fi
+quality_mode="${MOBILE_QUALITY_MODE:-release}"
+if [[ "$quality_mode" == pr-diagnostic ]]; then
+  if node scripts/live-contracts.mjs --pr-diagnostic >evidence/live-contracts.log 2>&1; then
+    record LIVE_CONTRACTS_PR_DIAGNOSTIC PASS
+  else
+    record LIVE_CONTRACTS_PR_DIAGNOSTIC FAIL
+  fi
+else
+  if node scripts/live-contracts.mjs >evidence/live-contracts.log 2>&1; then
+    record LIVE_CONTRACTS_RELEASE PASS
+  else
+    record LIVE_CONTRACTS_RELEASE FAIL
+  fi
+fi
 if "${TRIVY_BIN:-trivy}" fs --scanners secret,misconfig --severity HIGH,CRITICAL --exit-code 1 --skip-dirs .git --skip-dirs android/app/build --skip-dirs android/build --skip-dirs evidence . >evidence/source-scan.txt 2>&1; then record SOURCE_SCAN PASS; else record SOURCE_SCAN FAIL; fi
 if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
   {
     printf '### Mobile Quality Gates\n\n```text\n'
     cat evidence/quality-gates.txt
-    printf '```\n\nLive-Daten erfordern belegte OSS- und kommerzielle Datenrechte. Fixtures ersetzen keine Quellenfreigabe.\n'
+    printf '```\n\nLive-Daten erfordern belegte OSS-Software und qualifizierte Open-Data-Rechte. PR-Diagnose darf erwartete Release-Blocker dokumentieren; der Release-Modus bleibt strikt fail-closed.\n'
   } >>"$GITHUB_STEP_SUMMARY"
 fi
 exit "$failed"
