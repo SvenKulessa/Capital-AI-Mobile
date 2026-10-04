@@ -27,5 +27,15 @@ await check('MOBILE_LOGIN_REDIRECT',async()=>{
 // No universe/OHLCV implementation exists yet; a policy flag cannot replace it.
 gates.push({gate:'MULTI_ASSET_LIVE_UNIVERSE',status:'FAIL',reason:'OSS_SOURCE_NOT_CONFIGURED',pilotPerClass:adapter.universePolicy.firstTestPerClass,targets:adapter.universePolicy.targets});
 gates.push({gate:'INTERACTIVE_ANDROID_LOGIN',status:'NOT_TESTED'});
-console.log(JSON.stringify({gates},null,2));
-if(gates.some(gate=>gate.status==='FAIL'))process.exitCode=1;
+const mode=process.argv.includes('--pr-diagnostic')?'pr-diagnostic':'release';
+const failures=gates.filter(gate=>gate.status==='FAIL');
+let blockingFailures=failures;
+if(mode==='pr-diagnostic'){
+  const expectedBlocked=new Map([
+    ['OSS_SOURCE_ADMISSION','OSS_PROVIDER_ADMISSION_REQUIRED'],
+    ['MULTI_ASSET_LIVE_UNIVERSE','OSS_SOURCE_NOT_CONFIGURED'],
+  ]);
+  blockingFailures=failures.filter(gate=>expectedBlocked.get(gate.gate)!==gate.reason);
+}
+console.log(JSON.stringify({mode,gates,blockingFailures},null,2));
+if(blockingFailures.length)process.exitCode=1;
