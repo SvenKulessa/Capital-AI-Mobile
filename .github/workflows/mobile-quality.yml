@@ -36,7 +36,9 @@ jobs:
           scanners: secret,misconfig
           severity: HIGH,CRITICAL
           exit-code: '1'
-      - name: Mobile Unit Browser und Live Contract Gates
+      - name: Mobile Unit Browser und Live Contract Diagnose
+        env:
+          MOBILE_QUALITY_MODE: pr-diagnostic
         run: ./scripts/quality.sh
       - name: Gate-Diagnose auch bei Fehler bereitstellen
         if: always() && !cancelled()
