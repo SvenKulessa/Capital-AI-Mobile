@@ -1,7 +1,6 @@
-# OSS-Provider-Entscheidung — 2026-10-03
+# OSS-/Open-Data-Provider-Entscheidung — 2026-10-04
 
-Owner-Entscheidung: eigener Datenadapter; kein Deployment und keine Änderung
-produktiver Secrets. Basis: main `2a86e7532cf1a78f96dc4994ba19c3d622e985cb`,
+Owner-Entscheidung: CAPITAL-AI-Mobile verwendet für Marktdaten ausschließlich Open-Source-Software/Adapter **und** qualifizierte Open-Data-Datasets. Proprietäre oder nur kommerziell lizenzierte Datenfeeds schließen das Mobile-Gate nicht. Kein Deployment und keine Änderung produktiver Secrets. Basis: main `2a86e7532cf1a78f96dc4994ba19c3d622e985cb`,
 Merge von Mobile-PR #1, Head `f50e27a6d3dc4c756ff39487bddfcff451348149`.
 
 ## Konkrete Umsetzung
@@ -23,7 +22,7 @@ Merge von Mobile-PR #1, Head `f50e27a6d3dc4c756ff39487bddfcff451348149`.
 | Kandidat | Software | Daten-/Betriebsgrenze | Urteil |
 | --- | --- | --- | --- |
 | CCXT | MIT | Einheitliche Börsenadapter; Börsen und Daten werden dadurch nicht OSS | Optionaler serverseitiger Adapter, kein freigegebener OSS-Provider |
-| OpenBB | AGPL-3.0 | Provider-Abstraktion; eigene externe Datenverträge bleiben notwendig | Für breites Research prüfen, nicht als Mobile-Bundle einsetzen |
+| OpenBB | Apache-2.0 am aktuell gepinnten Web-Evidence-Stand | Provider-Abstraktion; externe Provider-/Dataset-Rechte bleiben separat | OSS-Tool zulässig zur Prüfung, aber kein Datenprovider und kein Mobile-Source-PASS |
 | DefiLlama SDK | MIT laut offizieller README | Preise/TVL; freie und Pro-Endpunkte; Quellenketten separat nachweisen | Kandidat für DeFi, kein nachgewiesener Top-400-OHLCV-Ersatz |
 | Uniswap V2 Subgraph | GPL-3.0 | Eigener Onchain-Indexer möglich; DEX-Pools sind kein globales Asset-Ranking | OSS-Ingestion-Baustein, gesonderte Infrastruktur-/Datenprüfung nötig |
 | Trading Strategy | AGPL-3.0 | DEX-Daten-/Backtesting-Framework, Datenrechte separat | Challenger für Onchain-Forschung |
@@ -38,9 +37,7 @@ Replay mit unveränderten Eingaben und Auswertungszeit ist deterministisch.
 Eine höhere Kursgenauigkeit, niedrigere Provider-Latenz oder bessere Rendite wurde
 nicht nachgewiesen. Ein Adapter macht eine ungeeignete Quelle nicht genauer.
 
-Empfehlung: schlanke OSS-Ingestion auf der Serverseite, kanonische unveränderliche
-Snapshots und eigene HTTPS-API; NATS/Valkey bleiben außerhalb der APK. CCXT nur
-für gesondert freigegebene Quellen verwenden. Mobile bleibt ohne Broker-Secrets.
+Festgelegt: schlanke OSS-Ingestion auf der Serverseite, kanonische unveränderliche Snapshots und eigene HTTPS-API; NATS/Valkey bleiben außerhalb der APK. Ein OSS-Adapter wie CCXT darf nur mit einem konkret nachgewiesenen Open-Data-Dataset verwendet werden. Proprietäre kommerzielle Feeds sind für Mobile ausgeschlossen. Mobile bleibt ohne Broker-Secrets.
 
 ## Blueprint des gewählten eigenen Adapters
 
@@ -64,7 +61,7 @@ für gesondert freigegebene Quellen verwenden. Mobile bleibt ohne Broker-Secrets
    vorhandene Fixtures beweisen keine Produktionsabdeckung.
 9. Promotion erst nach erfolgreichen Source-, Data-, Replay- und Mobile-Gates.
 
-Der Blueprint wurde nicht produktiv installiert. Neue Services, Kosten,
+Der Blueprint wurde nicht produktiv installiert. PR-Qualität und Release-Freigabe sind getrennt: erwartete fail-closed Source-Blocker dürfen als PR-Diagnose dokumentiert werden, während der Release-Modus weiterhin strikt an `OSS_SOURCE_ADMISSION` und `MULTI_ASSET_LIVE_UNIVERSE` scheitert. Neue Services, Kosten,
 Deployment und produktive Secret-Konfiguration bleiben separat freizugeben.
 Die bestehende App-Lizenz bleibt unverändert; ausschließlich das neue
 Adapter-Modul ist Apache-2.0. Keine Behauptung, das gesamte proprietäre Produkt
